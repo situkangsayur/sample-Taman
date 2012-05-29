@@ -214,12 +214,12 @@ void cleanup() {
  }
  */
 void initRendering() {
-	glEnable( GL_DEPTH_TEST);
-	glEnable( GL_COLOR_MATERIAL);
-	glEnable( GL_LIGHTING);
-	glEnable( GL_LIGHT0);
-	glEnable( GL_NORMALIZE);
-	glShadeModel( GL_SMOOTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_COLOR_MATERIAL);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_NORMALIZE);
+	glShadeModel(GL_SMOOTH);
 }
 
 void drawScene() {
@@ -247,7 +247,7 @@ void drawScene() {
 	glColor3f(0.3f, 0.9f, 0.0f);
 	for (int z = 0; z < _terrain->length() - 1; z++) {
 		//Makes OpenGL draw a triangle at every three consecutive vertices
-		glBegin( GL_TRIANGLE_STRIP);
+		glBegin(GL_TRIANGLE_STRIP);
 		for (int x = 0; x < _terrain->width(); x++) {
 			Vec3f normal = _terrain->getNormal(x, z);
 			glNormal3f(normal[0], normal[1], normal[2]);
@@ -286,7 +286,7 @@ void drawSceneTanah(Terrain *terrain, GLfloat r, GLfloat g, GLfloat b) {
 	glColor3f(r, g, b);
 	for (int z = 0; z < terrain->length() - 1; z++) {
 		//Makes OpenGL draw a triangle at every three consecutive vertices
-		glBegin( GL_TRIANGLE_STRIP);
+		glBegin(GL_TRIANGLE_STRIP);
 		for (int x = 0; x < terrain->width(); x++) {
 			Vec3f normal = terrain->getNormal(x, z);
 			glNormal3f(normal[0], normal[1], normal[2]);
@@ -369,6 +369,14 @@ GLuint loadtextures3D(const char *filename, int width, int height) {
 	unsigned char *data;
 	FILE *file;
 
+	/*
+	 if (filename == "water.bmp") {
+	 Image *img = loadBMP(filename);
+	 width = img->width;
+	 height = img->height;
+	 }
+	 */
+
 	file = fopen(filename, "rb");
 	if (file == NULL)
 		return 0;
@@ -379,18 +387,15 @@ GLuint loadtextures3D(const char *filename, int width, int height) {
 	fclose(file);
 
 	glGenTextures(1, &texture);
-	//glBindTexture(GL_TEXTURE_3D, texture);
+	glBindTexture(GL_TEXTURE_3D, texture);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
+	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER,
+			GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	//glTexParameterf(  GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-	//	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	//	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	//	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
-	//glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, width, height, 8, 0, GL_RGB,GL_UNSIGNED_BYTE,width);
 	//glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-	//gluBuild3DMipmapLevels( GL_TEXTURE_2D, 3, width, height, GL_RGB, GL_UNSIGNED_BYTE, data, );
+	gluBuild2DMipmaps(GL_TEXTURE_3D, 3, width, height, GL_RGB,
+			GL_UNSIGNED_BYTE, data);
 
 	data = NULL;
 
@@ -602,8 +607,13 @@ void drawBebek() {
 	glPopMatrix();
 }
 
+void balokKotak() {
+	glutSolidCube(2);
+
+}
+
 void balok3() {
-	glBegin( GL_POLYGON);
+	glBegin(GL_POLYGON);
 	//sisi depan
 	glTexCoord2f(0, 0);
 	glVertex3f(-0.5, -0.5, 0.5);
@@ -797,7 +807,7 @@ void kotak() {
 	glRotatef(90, 1, 0, 0);
 	glTranslatef(-1.2, 1.7, -0.5);
 
-	glBegin( GL_QUADS);
+	glBegin(GL_QUADS);
 	glTexCoord2f(1, 1);
 	glVertex3f(-1, -1, 0);
 	glTexCoord2f(1, 0);
@@ -824,10 +834,10 @@ void kolam() { //Kolam
 void tanah(void) {
 	glPushMatrix();
 	glBindTexture(GL_TEXTURE_2D, texture[2]);
-	glColor4f(1, 1, 1, 1);
+	//glColor4f(1, 1, 1, 1);
 	glRotatef(180, 0, 0, 1);
 	glScalef(80, 0, 120);
-	glBegin( GL_QUADS);
+	glBegin(GL_QUADS);
 	glTexCoord2f(1, 0);
 	glVertex3f(-1, -1, 1);
 	glTexCoord2f(1, 1);
@@ -1012,9 +1022,9 @@ void display(void) {
 
 
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); //disable the color mask
-	glDepthMask( GL_FALSE); //disable the depth mask
+	glDepthMask(GL_FALSE); //disable the depth mask
 
-	glEnable( GL_STENCIL_TEST); //enable the stencil testing
+	glEnable(GL_STENCIL_TEST); //enable the stencil testing
 
 	glStencilFunc(GL_ALWAYS, 1, 0xFFFFFFFF);
 	glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE); //set the stencil buffer to replace our next lot of data
@@ -1022,18 +1032,18 @@ void display(void) {
 	//ground
 	//tanah(); //set the data plane to be replaced
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE); //enable the color mask
-	glDepthMask( GL_TRUE); //enable the depth mask
+	glDepthMask(GL_TRUE); //enable the depth mask
 
 	glStencilFunc(GL_EQUAL, 1, 0xFFFFFFFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP); //set the stencil buffer to keep our next lot of data
 
-	glDisable( GL_DEPTH_TEST); //disable depth testing of the reflection
+	glDisable(GL_DEPTH_TEST); //disable depth testing of the reflection
 
 	// glPopMatrix();  
 	glEnable(GL_DEPTH_TEST); //enable the depth testing
 	glDisable(GL_STENCIL_TEST); //disable the stencil testing
 	//end of ground
-	glEnable( GL_BLEND); //enable alpha blending
+	glEnable(GL_BLEND); //enable alpha blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //set the blending function
 	glRotated(1, 0, 0, 0);
 
@@ -1155,17 +1165,17 @@ void display(void) {
 }
 
 void init(void) {
-	glEnable( GL_DEPTH_TEST);
-	glEnable( GL_LIGHTING);
-	glEnable( GL_LIGHT0);
-	glDepthFunc( GL_LESS);
-	glEnable( GL_NORMALIZE);
-	glEnable( GL_COLOR_MATERIAL);
-	glDepthFunc( GL_LEQUAL);
-	glShadeModel( GL_SMOOTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_COLOR_MATERIAL);
+	glDepthFunc(GL_LEQUAL);
+	glShadeModel(GL_SMOOTH);
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-	glEnable( GL_CULL_FACE);
-	glEnable( GL_TEXTURE_2D);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_TEXTURE_2D);
 	//glEnable(GL_TEXTURE_3D);
 	initRendering();
 	_terrain = loadTerrain("heightmap.bmp", 20);
@@ -1173,8 +1183,9 @@ void init(void) {
 	_terrainAir = loadTerrain("heightmapAir.bmp", 20);
 	texture[3] = loadtextures("wood.raw", 256, 256);
 	texture[1] = loadtextures("air.raw", 256, 256);
-	texture[2] = loadtextures("rumput.raw", 400, 199);//lantai
+	texture[2] = loadtextures("air.raw", 400, 199);//lantai
 	texture[0] = loadtextures3D("rumput.bmp", 400, 199);
+	texture[4]=loadtextures3D("rumput.bmp", 400, 199);
 
 }
 
@@ -1249,10 +1260,10 @@ void keyboard(unsigned char key, int x, int y) {
 
 void reshape(int w, int h) {
 	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
-	glMatrixMode( GL_PROJECTION);
+	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(60, (GLfloat) w / (GLfloat) h, 0.1, 1000.0);
-	glMatrixMode( GL_MODELVIEW);
+	glMatrixMode(GL_MODELVIEW);
 }
 
 int main(int argc, char **argv) {
