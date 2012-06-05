@@ -25,7 +25,16 @@ static int viewz = 80;
 
 float rot = 0;
 
+struct ImageTexture {
+	unsigned long sizeX;
+	unsigned long sizeY;
+	char *data;
+};
+typedef struct ImageTexture ImageTexture; //struktur data untuk
+
+
 //train 2D
+//class untuk terain 2D
 class Terrain {
 private:
 	int w; //Width
@@ -174,9 +183,12 @@ public:
 		return normals[z][x];
 	}
 };
+//end class
+
 
 //Loads a terrain from a heightmap.  The heights of the terrain range from
 //-height / 2 to height / 2.
+//load terain di procedure inisialisasi
 Terrain* loadTerrain(const char* filename, float height) {
 	Image* image = loadBMP(filename);
 	Terrain* t = new Terrain(image->width, image->height);
@@ -194,7 +206,9 @@ Terrain* loadTerrain(const char* filename, float height) {
 	return t;
 }
 
+
 float _angle = 60.0f;
+//buat tipe data terain
 Terrain* _terrain;
 Terrain* _terrainTanah;
 Terrain* _terrainAir;
@@ -213,6 +227,95 @@ void cleanup() {
  }
  }
  */
+
+//mengambil gambar BMP
+int ImageLoad(char *filename, ImageTexture *imageTex) {
+	FILE *file;
+	unsigned long size; // ukuran image dalam bytes
+	unsigned long i; // standard counter.
+	unsigned short int plane; // number of planes in image
+
+	unsigned short int bpp; // jumlah bits per pixel
+	char temp; // temporary color storage for var warna sementara untuk memastikan filenya ada
+
+
+	if ((file = fopen(filename, "rb")) == NULL) {
+		printf("File Not Found : %s\n", filename);
+		return 0;
+	}
+	// mencari file header bmp
+	fseek(file, 18, SEEK_CUR);
+	// read the width
+	if ((i = fread(&imageTex->sizeX, 4, 1, file)) != 1) {
+		printf("Error reading width from %s.\n", filename);
+		return 0;
+	}
+	//printf("Width of %s: %lu\n", filename, image->sizeX);
+	// membaca nilai height
+	if ((i = fread(&imageTex->sizeY, 4, 1, file)) != 1) {
+		printf("Error reading height from %s.\n", filename);
+		return 0;
+	}
+	//printf("Height of %s: %lu\n", filename, image->sizeY);
+	//menghitung ukuran image(asumsi 24 bits or 3 bytes per pixel).
+
+	size = imageTex->sizeX * imageTex->sizeY * 3;
+	// read the planes
+	if ((fread(&plane, 2, 1, file)) != 1) {
+		printf("Error reading planes from %s.\n", filename);
+		return 0;
+	}
+	if (plane != 1) {
+		printf("Planes from %s is not 1: %u\n", filename, plane);
+		return 0;
+	}
+	// read the bitsperpixel
+	if ((i = fread(&bpp, 2, 1, file)) != 1) {
+		printf("Error reading bpp from %s.\n", filename);
+
+		return 0;
+	}
+	if (bpp != 24) {
+		printf("Bpp from %s is not 24: %u\n", filename, bpp);
+		return 0;
+	}
+	// seek past the rest of the bitmap header.
+	fseek(file, 24, SEEK_CUR);
+	// read the data.
+	imageTex->data = (char *) malloc(size);
+	if (imageTex->data == NULL) {
+		printf("Error allocating memory for color-corrected image data");
+		return 0;
+	}
+	if ((i = fread(imageTex->data, size, 1, file)) != 1) {
+		printf("Error reading image data from %s.\n", filename);
+		return 0;
+	}
+	for (i = 0; i < size; i += 3) { // membalikan semuan nilai warna (gbr - > rgb)
+		temp = imageTex->data[i];
+		imageTex->data[i] = imageTex->data[i + 2];
+		imageTex->data[i + 2] = temp;
+	}
+	// we're done.
+	return 1;
+}
+
+//mengambil tekstur
+ImageTexture * loadTexture() {
+	ImageTexture *image1;
+	// alokasi memmory untuk tekstur
+	image1 = (ImageTexture *) malloc(sizeof(ImageTexture));
+	if (image1 == NULL) {
+		printf("Error allocating space for image");
+		exit(0);
+	}
+	//pic.bmp is a 64x64 picture
+	if (!ImageLoad("water.bmp", image1)) {
+		exit(1);
+	}
+	return image1;
+}
+
 void initRendering() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_COLOR_MATERIAL);
@@ -260,7 +363,7 @@ void drawScene() {
 	}
 
 }
-
+//untuk di display
 void drawSceneTanah(Terrain *terrain, GLfloat r, GLfloat g, GLfloat b) {
 	//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	/*
@@ -801,7 +904,7 @@ void balok2() {
 
 void kotak() {
 	glPushMatrix();
-	glBindTexture(GL_TEXTURE_2D, texture[1]);
+	glBindTexture(GL_TEXTURE_2D, texture[5]);
 	glScalef(30, 1, 30);
 	glRotatef(45, 0, 1, 0);
 	glRotatef(90, 1, 0, 0);
@@ -821,6 +924,7 @@ void kotak() {
 }
 
 void kolam() { //Kolam
+
 	glPushMatrix();
 	glRotatef(90, 1, 0, 0);
 	glTranslatef(11, 60, 0);
@@ -1185,7 +1289,32 @@ void init(void) {
 	texture[1] = loadtextures("air.raw", 256, 256);
 	texture[2] = loadtextures("air.raw", 400, 199);//lantai
 	texture[0] = loadtextures3D("rumput.bmp", 400, 199);
-	texture[4]=loadtextures3D("rumput.bmp", 400, 199);
+	texture[4] = loadtextures3D("rumput.bmp", 400, 199);
+
+	//binding texture
+
+	ImageTexture *image2 = loadTexture();
+
+	if (image2 == NULL) {
+		printf("Image was not returned from loadTexture\n");
+		exit(0);
+	}
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	// Generate texture/ membuat texture
+	glGenTextures(2, texture);
+
+	//binding texture untuk membuat texture 2D
+	glBindTexture(GL_TEXTURE_2D, texture[5]);
+
+	//menyesuaikan ukuran textur ketika image lebih besar dari texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //
+	//menyesuaikan ukuran textur ketika image lebih kecil dari texture
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); //
+
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, image2->sizeX, image2->sizeY, 0, GL_RGB,
+			GL_UNSIGNED_BYTE, image2->data);
 
 }
 
